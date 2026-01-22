@@ -138,7 +138,7 @@ function App() {
                         Strategic <span style={{ color: '#00D4FF' }}>Payloads</span>
                     </Typography>
                     <Typography variant="body1" sx={{ color: 'text.secondary', mb: 8, maxWidth: '600px' }}>
-                        A selection of mission-critical engineering projects. Click the edit icon on any card to update its data live.
+                        A selection of mission-critical engineering projects.
                     </Typography>
                 </motion.div>
 
@@ -176,7 +176,7 @@ function App() {
 
             <Box sx={{ py: 6, textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    © 2026 Aerospace Engineering Portfolio - Ariel Aaron Argomedo Madrid.
+                    © 2026 Professional Portfolio - Ariel Aaron Argomedo Madrid.
                 </Typography>
             </Box>
         </Box>
