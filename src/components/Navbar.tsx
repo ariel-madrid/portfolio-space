@@ -55,7 +55,7 @@ const Navbar: React.FC = () => {
                             component="div"
                             sx={{ fontWeight: 800, letterSpacing: 1, fontFamily: 'Space Grotesk' }}
                         >
-                            ASTRA<span style={{ color: '#00D4FF' }}>CORE</span>
+                            ARGOMEDO<span style={{ color: '#00D4FF' }}> SYSTEMS</span>
                         </Typography>
                     </Box>
                     <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 4, alignItems: 'center' }}>
