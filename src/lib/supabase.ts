@@ -12,13 +12,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export type BlogPost = {
     id: string;
     title: string;
-    title_en: string; // New
+    title_en: string;
     summary: string;
-    summary_en: string; // New
+    summary_en: string;
     content: string;
-    content_en: string; // New
+    content_en: string;
     main_image: string;
     tags: string[];
     author: string;
+    created_at: string;
+};
+
+export type BlogComment = {
+    id: string;
+    post_id: string;
+    username: string;
+    content: string;
     created_at: string;
 };

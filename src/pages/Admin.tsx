@@ -15,11 +15,16 @@ import {
     DialogContent,
     DialogActions,
     Chip,
-    Divider
+    Divider,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemSecondaryAction,
+    Tooltip
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import { supabase, BlogPost } from '../lib/supabase';
-import { Lock, Plus, Edit, Trash2, LogOut, Save, Image as ImageIcon, Languages } from 'lucide-react';
+import { supabase, BlogPost, BlogComment } from '../lib/supabase';
+import { Lock, Plus, Edit, Trash2, LogOut, Save, Image as ImageIcon, Languages, MessageSquare, User, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const ADMIN_USER = import.meta.env.VITE_ADMIN_USER || 'admin';
@@ -36,6 +41,11 @@ const Admin: React.FC = () => {
     const [openDialog, setOpenDialog] = useState(false);
     const [editingPost, setEditingPost] = useState<Partial<BlogPost> | null>(null);
     const [newTag, setNewTag] = useState('');
+
+    // Comments State
+    const [openCommentsDialog, setOpenCommentsDialog] = useState(false);
+    const [selectedPostComments, setSelectedPostComments] = useState<BlogComment[]>([]);
+    const [currentPostId, setCurrentPostId] = useState<string | null>(null);
 
     useEffect(() => {
         const auth = localStorage.getItem('admin_auth');
@@ -55,6 +65,25 @@ const Admin: React.FC = () => {
         if (error) console.error('Error fetching posts:', error);
         else setPosts(data || []);
         setLoading(false);
+    };
+
+    const fetchComments = async (postId: string) => {
+        const { data, error } = await supabase
+            .from('blog_comments')
+            .select('*')
+            .eq('post_id', postId)
+            .order('created_at', { ascending: false });
+
+        if (error) console.error('Error fetching comments:', error);
+        else setSelectedPostComments(data || []);
+    };
+
+    const handleDeleteComment = async (commentId: string) => {
+        if (window.confirm('Erase this transmission signal permanently?')) {
+            const { error } = await supabase.from('blog_comments').delete().eq('id', commentId);
+            if (error) alert('Error: ' + error.message);
+            else if (currentPostId) fetchComments(currentPostId);
+        }
     };
 
     const handleLogin = (e: React.FormEvent) => {
@@ -79,18 +108,21 @@ const Admin: React.FC = () => {
             return;
         }
 
+        // Clean object to avoid sending primary keys or protected fields in the UPDATE body
+        const { id, created_at, ...updateData } = editingPost as any;
+
         const postToSave = {
-            ...editingPost,
+            ...updateData,
             author: ADMIN_USER,
             tags: editingPost.tags || []
         };
 
         let error;
-        if (editingPost.id) {
+        if (id) {
             const { error: err } = await supabase
                 .from('blogs')
                 .update(postToSave)
-                .eq('id', editingPost.id);
+                .eq('id', id);
             error = err;
         } else {
             const { error: err } = await supabase
@@ -127,6 +159,12 @@ const Admin: React.FC = () => {
             tags: []
         });
         setOpenDialog(true);
+    };
+
+    const openComments = (postId: string) => {
+        setCurrentPostId(postId);
+        fetchComments(postId);
+        setOpenCommentsDialog(true);
     };
 
     const addTag = () => {
@@ -198,6 +236,11 @@ const Admin: React.FC = () => {
                                     <Typography variant="h6" sx={{ color: '#ffd700', mb: 1 }}>{post.title}</Typography>
                                     <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>{post.summary}</Typography>
                                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                                        <Tooltip title="Manage Signals">
+                                            <IconButton size="small" sx={{ color: '#ffd700' }} onClick={() => openComments(post.id)}>
+                                                <MessageSquare size={18} />
+                                            </IconButton>
+                                        </Tooltip>
                                         <IconButton size="small" sx={{ color: '#00ffaa' }} onClick={() => openEditor(post)}>
                                             <Edit size={18} />
                                         </IconButton>
@@ -325,6 +368,60 @@ const Admin: React.FC = () => {
                         Archive Record
                     </Button>
                 </DialogActions>
+            </Dialog>
+
+            {/* Comments Dialog */}
+            <Dialog open={openCommentsDialog} onClose={() => setOpenCommentsDialog(false)} maxWidth="sm" fullWidth>
+                <DialogTitle sx={{ bgcolor: '#0a0a0b', color: '#ffd700', fontFamily: 'Cinzel', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <MessageSquare size={24} /> Transmission Logs
+                    </Box>
+                    <IconButton onClick={() => setOpenCommentsDialog(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                        <X size={20} />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent sx={{ bgcolor: '#0a0a0b', minHeight: '300px' }}>
+                    {selectedPostComments.length === 0 ? (
+                        <Box sx={{ display: 'flex', height: '200px', alignItems: 'center', justifyContent: 'center', opacity: 0.3 }}>
+                            <Typography variant="body1">No signals intercepted for this record.</Typography>
+                        </Box>
+                    ) : (
+                        <List>
+                            {selectedPostComments.map((comment) => (
+                                <React.Fragment key={comment.id}>
+                                    <ListItem alignItems="flex-start" sx={{ px: 0, py: 2 }}>
+                                        <Box sx={{ mr: 2, mt: 0.5 }}>
+                                            <User size={20} color="#ffd700" opacity={0.5} />
+                                        </Box>
+                                        <ListItemText
+                                            primary={
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Typography variant="subtitle2" sx={{ color: '#ffd700', fontWeight: 700 }}>
+                                                        {comment.username}
+                                                    </Typography>
+                                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)' }}>
+                                                        {new Date(comment.created_at).toLocaleDateString()}
+                                                    </Typography>
+                                                </Box>
+                                            }
+                                            secondary={
+                                                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 0.5 }}>
+                                                    {comment.content}
+                                                </Typography>
+                                            }
+                                        />
+                                        <ListItemSecondaryAction>
+                                            <IconButton edge="end" size="small" sx={{ color: '#ff4d00', opacity: 0.5, '&:hover': { opacity: 1 } }} onClick={() => handleDeleteComment(comment.id)}>
+                                                <Trash2 size={16} />
+                                            </IconButton>
+                                        </ListItemSecondaryAction>
+                                    </ListItem>
+                                    <Divider sx={{ borderColor: 'rgba(255,255,255,0.05)' }} />
+                                </React.Fragment>
+                            ))}
+                        </List>
+                    )}
+                </DialogContent>
             </Dialog>
         </Box>
     );

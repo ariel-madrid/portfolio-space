@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Container, Typography, Card, CardContent, CardMedia, Chip, IconButton, Skeleton, useMediaQuery, useTheme, Button } from '@mui/material';
+import { Box, Container, Typography, Card, CardContent, CardMedia, Chip, IconButton, Skeleton, useMediaQuery, useTheme, Button, TextField, Divider, Grid } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase, BlogPost } from '../lib/supabase';
-import { Sparkles, Eye, Ghost, Hexagon, ScrollText, Calendar, Rocket, ArrowLeft } from 'lucide-react';
+import { supabase, BlogPost, BlogComment } from '../lib/supabase';
+import { Sparkles, Eye, Ghost, Hexagon, ScrollText, Calendar, Rocket, ArrowLeft, MessageSquare, Send, User } from 'lucide-react';
 
 const Ufo = () => (
     <motion.div
@@ -40,6 +40,12 @@ const Blog: React.FC = () => {
     const [lang, setLang] = useState<'ES' | 'EN'>(() => (localStorage.getItem('app_lang') as 'ES' | 'EN') || 'ES');
     const [showContentOnMobile, setShowContentOnMobile] = useState(false);
 
+    // Comments State
+    const [comments, setComments] = useState<BlogComment[]>([]);
+    const [newCommentUser, setNewCommentUser] = useState('');
+    const [newCommentContent, setNewCommentContent] = useState('');
+    const [submittingComment, setSubmittingComment] = useState(false);
+
     useEffect(() => {
         fetchPosts();
         const handleLang = (e: any) => setLang(e.detail);
@@ -47,22 +53,63 @@ const Blog: React.FC = () => {
         return () => window.removeEventListener('langChange', handleLang);
     }, []);
 
+    useEffect(() => {
+        if (selectedPost) {
+            fetchComments(selectedPost.id);
+        }
+    }, [selectedPost]);
+
     const fetchPosts = async () => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('blogs')
-            .select('*')
-            .order('created_at', { ascending: false });
+        try {
+            const { data, error } = await supabase
+                .from('blogs')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('Error fetching posts:', error);
-        } else {
-            setPosts(data || []);
-            if (data && data.length > 0 && !isMobile) {
-                setSelectedPost(data[0]);
+            if (error) {
+                console.error('Error fetching posts:', error);
+            } else {
+                setPosts(data || []);
+                if (data && data.length > 0 && !isMobile && !selectedPost) {
+                    setSelectedPost(data[0]);
+                }
             }
+        } catch (err) {
+            console.error('Fatal connection error:', err);
         }
         setLoading(false);
+    };
+
+    const fetchComments = async (postId: string) => {
+        const { data, error } = await supabase
+            .from('blog_comments')
+            .select('*')
+            .eq('post_id', postId)
+            .order('created_at', { ascending: true });
+
+        if (!error) {
+            setComments(data || []);
+        }
+    };
+
+    const handlePostComment = async () => {
+        if (!selectedPost || !newCommentUser || !newCommentContent) return;
+        setSubmittingComment(true);
+
+        const { error } = await supabase
+            .from('blog_comments')
+            .insert([{
+                post_id: selectedPost.id,
+                username: newCommentUser,
+                content: newCommentContent
+            }]);
+
+        if (!error) {
+            setNewCommentContent('');
+            fetchComments(selectedPost.id);
+        }
+        setSubmittingComment(false);
     };
 
     const handlePostSelect = (post: BlogPost) => {
@@ -74,8 +121,28 @@ const Blog: React.FC = () => {
     };
 
     const t = {
-        ES: { title: 'ANOMALÍAS COGNITIVAS', footer: 'STREAM DE DATOS TERMINADO | LA VERDAD ESTÁ AHÍ FUERA', select: 'SELECCIONA UNA FRECUENCIA', back: 'Volver a la lista' },
-        EN: { title: 'COGNITIVE ANOMALIES', footer: 'DATA STREAM TERMINATED | THE TRUTH IS OUT THERE', select: 'SELECT A FREQUENCY', back: 'Back to list' }
+        ES: {
+            title: 'ANOMALÍAS COGNITIVAS',
+            footer: 'STREAM DE DATOS TERMINADO | LA VERDAD ESTÁ AHÍ FUERA',
+            select: 'SELECCIONA UNA FRECUENCIA',
+            back: 'Volver a la lista',
+            comments: 'REGISTROS DE TRANSMISIÓN',
+            commentLabel: 'Tu Identidad (Apodo)',
+            contentLabel: 'Mensaje Interceptado',
+            submit: 'Transmitir Datos',
+            noComments: 'No se han interceptado señales aún...'
+        },
+        EN: {
+            title: 'COGNITIVE ANOMALIES',
+            footer: 'DATA STREAM TERMINATED | THE TRUTH IS OUT THERE',
+            select: 'SELECT A FREQUENCY',
+            back: 'Back to list',
+            comments: 'TRANSMISSION LOGS',
+            commentLabel: 'Your Identity (Alias)',
+            contentLabel: 'Intercepted Message',
+            submit: 'Transmit Data',
+            noComments: 'No signals intercepted yet...'
+        }
     }[lang];
 
     return (
@@ -146,7 +213,7 @@ const Blog: React.FC = () => {
                     height: { xs: 'auto', md: 'calc(100vh - 200px)' }
                 }}>
 
-                    {/* LEFT PANEL: Blog List (Hidden on mobile if content is shown) */}
+                    {/* LEFT PANEL: Blog List */}
                     <Box sx={{
                         display: { xs: showContentOnMobile ? 'none' : 'block', md: 'block' },
                         flex: { xs: '1', md: '0 0 350px' },
@@ -197,7 +264,7 @@ const Blog: React.FC = () => {
                         )}
                     </Box>
 
-                    {/* RIGHT PANEL: Post Content (Hidden on mobile if content is not shown) */}
+                    {/* RIGHT PANEL: Post Content + Comments */}
                     <Box sx={{
                         display: { xs: showContentOnMobile ? 'block' : 'none', md: 'block' },
                         flex: 1,
@@ -220,6 +287,7 @@ const Blog: React.FC = () => {
                                     exit={{ opacity: 0, y: -10 }}
                                     transition={{ duration: 0.5 }}
                                 >
+                                    {/* Post Header */}
                                     <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <Box>
                                             <Typography variant="h4" sx={{
@@ -245,6 +313,7 @@ const Blog: React.FC = () => {
                                         </IconButton>
                                     </Box>
 
+                                    {/* Image */}
                                     <Box sx={{
                                         width: '100%',
                                         height: { xs: '200px', md: '350px' },
@@ -257,19 +326,142 @@ const Blog: React.FC = () => {
                                         <img src={selectedPost.main_image} alt={selectedPost.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
                                     </Box>
 
+                                    {/* Content */}
                                     <Box sx={{
                                         fontFamily: 'Crimson Text, serif',
                                         fontSize: { xs: '1.1rem', md: '1.25rem' },
                                         lineHeight: 1.7,
                                         color: 'rgba(255,255,255,0.85)',
                                         textAlign: 'justify',
-                                        '& p': { mb: 3 }
+                                        mb: 10
                                     }}>
                                         <Typography variant="body1" sx={{ whiteSpace: 'pre-line', fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 'inherit' }}>
                                             {lang === 'EN' ? selectedPost.content_en : selectedPost.content}
                                         </Typography>
                                     </Box>
 
+                                    {/* Comments Section */}
+                                    <Box sx={{ mt: 10, mb: 4 }}>
+                                        <Typography variant="h5" sx={{
+                                            fontFamily: 'Cinzel, serif',
+                                            color: '#ffd700',
+                                            mb: 4,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 2,
+                                            letterSpacing: 2
+                                        }}>
+                                            <MessageSquare size={24} /> {t.comments}
+                                        </Typography>
+
+                                        {/* Comment Form */}
+                                        <Box sx={{
+                                            bgcolor: 'rgba(255,255,255,0.03)',
+                                            p: 3,
+                                            borderRadius: 2,
+                                            mb: 6,
+                                            border: '1px solid rgba(255,255,255,0.05)'
+                                        }}>
+                                            <Grid container spacing={2}>
+                                                <Grid item xs={12} sm={6}>
+                                                    <TextField
+                                                        fullWidth
+                                                        placeholder={t.commentLabel}
+                                                        value={newCommentUser}
+                                                        onChange={(e) => setNewCommentUser(e.target.value)}
+                                                        variant="standard"
+                                                        InputProps={{
+                                                            startAdornment: <User size={18} style={{ marginRight: 8, opacity: 0.5 }} />,
+                                                            disableUnderline: true,
+                                                            sx: { color: 'white', fontFamily: 'Crimson Text', fontSize: '1.1rem' }
+                                                        }}
+                                                        sx={{ borderBottom: '1px solid rgba(0, 255, 170, 0.3)', pb: 1 }}
+                                                    />
+                                                </Grid>
+                                                <Grid item xs={12}>
+                                                    <TextField
+                                                        fullWidth
+                                                        multiline
+                                                        rows={2}
+                                                        placeholder={t.contentLabel}
+                                                        value={newCommentContent}
+                                                        onChange={(e) => setNewCommentContent(e.target.value)}
+                                                        variant="standard"
+                                                        InputProps={{
+                                                            disableUnderline: true,
+                                                            sx: { color: 'white', fontFamily: 'Crimson Text', fontSize: '1.1rem' }
+                                                        }}
+                                                        sx={{ borderBottom: '1px solid rgba(0, 255, 170, 0.3)', pb: 1, mt: 2 }}
+                                                    />
+                                                </Grid>
+                                                <Grid item xs={12} sx={{ textAlign: 'right', mt: 2 }}>
+                                                    <Button
+                                                        variant="text"
+                                                        endIcon={<Send size={18} />}
+                                                        disabled={submittingComment || !newCommentUser || !newCommentContent}
+                                                        onClick={handlePostComment}
+                                                        sx={{
+                                                            color: '#00ffaa',
+                                                            fontWeight: 700,
+                                                            '&:hover': { bgcolor: 'rgba(0, 255, 170, 0.1)' }
+                                                        }}
+                                                    >
+                                                        {t.submit}
+                                                    </Button>
+                                                </Grid>
+                                            </Grid>
+                                        </Box>
+
+                                        {/* Comments List */}
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                            {comments.length === 0 ? (
+                                                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', textAlign: 'center' }}>
+                                                    {t.noComments}
+                                                </Typography>
+                                            ) : (
+                                                comments.map((comment, index) => (
+                                                    <motion.div
+                                                        key={comment.id}
+                                                        initial={{ opacity: 0, x: -10 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: index * 0.1 }}
+                                                    >
+                                                        <Box sx={{ display: 'flex', gap: 2 }}>
+                                                            <Box sx={{
+                                                                width: 40,
+                                                                height: 40,
+                                                                borderRadius: '50%',
+                                                                bgcolor: 'rgba(255,215,0,0.1)',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                border: '1px solid rgba(255,215,0,0.3)',
+                                                                flexShrink: 0
+                                                            }}>
+                                                                <User size={20} color="#ffd700" />
+                                                            </Box>
+                                                            <Box sx={{ flex: 1 }}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 0.5 }}>
+                                                                    <Typography variant="subtitle2" sx={{ color: '#ffd700', fontWeight: 700, fontFamily: 'Cinzel' }}>
+                                                                        {comment.username}
+                                                                    </Typography>
+                                                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)' }}>
+                                                                        {new Date(comment.created_at).toLocaleDateString()}
+                                                                    </Typography>
+                                                                </Box>
+                                                                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'Crimson Text', fontSize: '1.1rem', lineHeight: 1.4 }}>
+                                                                    {comment.content}
+                                                                </Typography>
+                                                            </Box>
+                                                        </Box>
+                                                        {index < comments.length - 1 && <Divider sx={{ mt: 3, borderColor: 'rgba(255,255,255,0.05)' }} />}
+                                                    </motion.div>
+                                                ))
+                                            )}
+                                        </Box>
+                                    </Box>
+
+                                    {/* Footer */}
                                     <Box sx={{ mt: 8, pt: 4, borderTop: '1px solid rgba(255, 215, 0, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
                                         <ScrollText size={18} color="#ffd700" opacity={0.5} />
                                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', letterSpacing: 2, fontFamily: 'Cinzel', fontSize: '0.7rem', textAlign: 'center' }}>
