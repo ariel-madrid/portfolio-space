@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Container, Typography, Card, CardContent, CardMedia, Chip, IconButton, Skeleton } from '@mui/material';
+import { Box, Container, Typography, Card, CardContent, CardMedia, Chip, IconButton, Skeleton, useMediaQuery, useTheme } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase, BlogPost } from '../lib/supabase';
-import { Sparkles, Eye, Ghost, Hexagon, ScrollText, Calendar, Rocket } from 'lucide-react';
+import { Sparkles, Eye, Ghost, Hexagon, ScrollText, Calendar, Rocket, ArrowLeft } from 'lucide-react';
 
 const Ufo = () => (
     <motion.div
@@ -32,10 +32,13 @@ const Ufo = () => (
 );
 
 const Blog: React.FC = () => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [posts, setPosts] = useState<BlogPost[]>([]);
     const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
     const [loading, setLoading] = useState(true);
     const [lang, setLang] = useState<'ES' | 'EN'>(() => (localStorage.getItem('app_lang') as 'ES' | 'EN') || 'ES');
+    const [showContentOnMobile, setShowContentOnMobile] = useState(false);
 
     useEffect(() => {
         fetchPosts();
@@ -55,16 +58,24 @@ const Blog: React.FC = () => {
             console.error('Error fetching posts:', error);
         } else {
             setPosts(data || []);
-            if (data && data.length > 0) {
+            if (data && data.length > 0 && !isMobile) {
                 setSelectedPost(data[0]);
             }
         }
         setLoading(false);
     };
 
+    const handlePostSelect = (post: BlogPost) => {
+        setSelectedPost(post);
+        if (isMobile) {
+            setShowContentOnMobile(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
     const t = {
-        ES: { title: 'ANOMALÍAS COGNITIVAS', footer: 'STREAM DE DATOS TERMINADO | LA VERDAD ESTÁ AHÍ FUERA', select: 'SELECCIONA UNA FRECUENCIA' },
-        EN: { title: 'COGNITIVE ANOMALIES', footer: 'DATA STREAM TERMINATED | THE TRUTH IS OUT THERE', select: 'SELECT A FREQUENCY' }
+        ES: { title: 'ANOMALÍAS COGNITIVAS', footer: 'STREAM DE DATOS TERMINADO | LA VERDAD ESTÁ AHÍ FUERA', select: 'SELECCIONA UNA FRECUENCIA', back: 'Volver a la lista' },
+        EN: { title: 'COGNITIVE ANOMALIES', footer: 'DATA STREAM TERMINATED | THE TRUTH IS OUT THERE', select: 'SELECT A FREQUENCY', back: 'Back to list' }
     }[lang];
 
     return (
@@ -77,7 +88,7 @@ const Blog: React.FC = () => {
             `,
             backgroundRepeat: 'repeat',
             backgroundBlendMode: 'overlay',
-            pt: '80px',
+            pt: { xs: '80px', md: '100px' },
             color: '#e0e0e0',
             position: 'relative',
             overflow: 'hidden'
@@ -99,7 +110,8 @@ const Blog: React.FC = () => {
             <Ufo />
 
             <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, pb: 4 }}>
-                <Box sx={{ textAlign: 'center', mb: 4 }}>
+                {/* Centered Title */}
+                <Box sx={{ textAlign: 'center', mb: { xs: 3, md: 5 } }}>
                     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
                         <Typography variant="h3" sx={{
                             fontFamily: 'Cinzel, serif',
@@ -107,22 +119,39 @@ const Blog: React.FC = () => {
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: 2,
-                            letterSpacing: 6,
+                            letterSpacing: { xs: 3, md: 6 },
                             textShadow: '0 0 20px rgba(255, 215, 0, 0.4)',
-                            fontSize: '1.8rem'
+                            fontSize: { xs: '1.2rem', md: '1.8rem' }
                         }}>
-                            <Ghost size={28} /> {t.title} <Ghost size={28} />
+                            <Ghost size={isMobile ? 20 : 28} /> {t.title} <Ghost size={isMobile ? 20 : 28} />
                         </Typography>
                     </motion.div>
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 4, height: 'calc(100vh - 180px)' }}>
+                {/* Mobile Back Button */}
+                {isMobile && showContentOnMobile && (
+                    <Button
+                        startIcon={<ArrowLeft size={18} />}
+                        onClick={() => setShowContentOnMobile(false)}
+                        sx={{ color: '#ffd700', mb: 2, fontWeight: 700 }}
+                    >
+                        {t.back}
+                    </Button>
+                )}
 
-                    {/* LEFT PANEL: Blog List */}
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    gap: 4,
+                    height: { xs: 'auto', md: 'calc(100vh - 200px)' }
+                }}>
+
+                    {/* LEFT PANEL: Blog List (Hidden on mobile if content is shown) */}
                     <Box sx={{
-                        flex: '0 0 350px',
-                        overflowY: 'auto',
-                        pr: 2,
+                        display: { xs: showContentOnMobile ? 'none' : 'block', md: 'block' },
+                        flex: { xs: '1', md: '0 0 350px' },
+                        overflowY: { xs: 'visible', md: 'auto' },
+                        pr: { xs: 0, md: 2 },
                         '&::-webkit-scrollbar': { width: '2px' },
                         '&::-webkit-scrollbar-thumb': { background: 'rgba(255, 215, 0, 0.2)', borderRadius: '10px' }
                     }}>
@@ -132,7 +161,7 @@ const Blog: React.FC = () => {
                             ))
                         ) : (
                             posts.map((post) => (
-                                <motion.div key={post.id} whileHover={{ x: 6 }} onClick={() => setSelectedPost(post)}>
+                                <motion.div key={post.id} whileHover={{ x: 6 }} onClick={() => handlePostSelect(post)}>
                                     <Card sx={{
                                         mb: 2,
                                         cursor: 'pointer',
@@ -168,14 +197,15 @@ const Blog: React.FC = () => {
                         )}
                     </Box>
 
-                    {/* RIGHT PANEL: Post Content */}
+                    {/* RIGHT PANEL: Post Content (Hidden on mobile if content is not shown) */}
                     <Box sx={{
+                        display: { xs: showContentOnMobile ? 'block' : 'none', md: 'block' },
                         flex: 1,
                         bgcolor: 'rgba(10, 10, 15, 0.7)',
                         borderRadius: 2,
                         border: '1px solid rgba(255, 215, 0, 0.1)',
-                        p: { xs: 3, md: 6 },
-                        overflowY: 'auto',
+                        p: { xs: 2.5, md: 6 },
+                        overflowY: { xs: 'visible', md: 'auto' },
                         position: 'relative',
                         backdropFilter: 'blur(20px)',
                         '&::-webkit-scrollbar': { width: '2px' },
@@ -190,37 +220,37 @@ const Blog: React.FC = () => {
                                     exit={{ opacity: 0, y: -10 }}
                                     transition={{ duration: 0.5 }}
                                 >
-                                    <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <Box>
                                             <Typography variant="h4" sx={{
                                                 fontFamily: 'Cinzel, serif',
                                                 color: '#ffd700',
                                                 mb: 1,
                                                 textShadow: '0 0 20px rgba(255, 215, 0, 0.3)',
-                                                fontSize: '2.2rem'
+                                                fontSize: { xs: '1.5rem', md: '2.2rem' }
                                             }}>
                                                 {lang === 'EN' ? selectedPost.title_en : selectedPost.title}
                                             </Typography>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, color: 'rgba(255,255,255,0.4)' }}>
-                                                <Typography variant="body2" sx={{ fontFamily: 'Crimson Text', fontSize: '1rem' }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, color: 'rgba(255,255,255,0.4)' }}>
+                                                <Typography variant="body2" sx={{ fontFamily: 'Crimson Text', fontSize: '0.9rem' }}>
                                                     {new Date(selectedPost.created_at).toLocaleDateString()}
                                                 </Typography>
-                                                <Typography variant="body2" sx={{ color: '#00ffaa', fontWeight: 600, fontFamily: 'Cinzel', fontSize: '0.9rem', letterSpacing: 1 }}>
+                                                <Typography variant="body2" sx={{ color: '#00ffaa', fontWeight: 600, fontFamily: 'Cinzel', fontSize: '0.8rem', letterSpacing: 1 }}>
                                                     • {selectedPost.author.toUpperCase()}
                                                 </Typography>
                                             </Box>
                                         </Box>
                                         <IconButton size="small" sx={{ color: '#ffd700', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
-                                            <Sparkles size={20} />
+                                            <Sparkles size={18} />
                                         </IconButton>
                                     </Box>
 
                                     <Box sx={{
                                         width: '100%',
-                                        height: '350px',
+                                        height: { xs: '200px', md: '350px' },
                                         borderRadius: 2,
                                         overflow: 'hidden',
-                                        mb: 5,
+                                        mb: 4,
                                         border: '1px solid rgba(255, 215, 0, 0.2)',
                                         boxShadow: '0 0 30px rgba(0,0,0,0.5)'
                                     }}>
@@ -229,7 +259,7 @@ const Blog: React.FC = () => {
 
                                     <Box sx={{
                                         fontFamily: 'Crimson Text, serif',
-                                        fontSize: '1.25rem',
+                                        fontSize: { xs: '1.1rem', md: '1.25rem' },
                                         lineHeight: 1.7,
                                         color: 'rgba(255,255,255,0.85)',
                                         textAlign: 'justify',
@@ -240,18 +270,18 @@ const Blog: React.FC = () => {
                                         </Typography>
                                     </Box>
 
-                                    <Box sx={{ mt: 10, pt: 4, borderTop: '1px solid rgba(255, 215, 0, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-                                        <ScrollText size={20} color="#ffd700" opacity={0.5} />
-                                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', letterSpacing: 2, fontFamily: 'Cinzel', fontSize: '0.8rem' }}>
+                                    <Box sx={{ mt: 8, pt: 4, borderTop: '1px solid rgba(255, 215, 0, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                                        <ScrollText size={18} color="#ffd700" opacity={0.5} />
+                                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', letterSpacing: 2, fontFamily: 'Cinzel', fontSize: '0.7rem', textAlign: 'center' }}>
                                             {t.footer}
                                         </Typography>
-                                        <ScrollText size={20} color="#ffd700" opacity={0.5} />
+                                        <ScrollText size={18} color="#ffd700" opacity={0.5} />
                                     </Box>
                                 </motion.div>
                             ) : (
-                                <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
-                                    <Hexagon size={100} color="#ffd700" />
-                                    <Typography variant="body2" sx={{ mt: 3, fontFamily: 'Cinzel', letterSpacing: 4 }}>
+                                <Box sx={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
+                                    <Hexagon size={80} color="#ffd700" />
+                                    <Typography variant="body2" sx={{ mt: 2, fontFamily: 'Cinzel', letterSpacing: 3 }}>
                                         {t.select}
                                     </Typography>
                                 </Box>
