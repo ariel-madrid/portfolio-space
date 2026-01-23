@@ -321,9 +321,10 @@ const Blog: React.FC = () => {
                                         overflow: 'hidden',
                                         mb: 4,
                                         border: '1px solid rgba(255, 215, 0, 0.2)',
-                                        boxShadow: '0 0 30px rgba(0,0,0,0.5)'
+                                        boxShadow: '0 0 30px rgba(0,0,0,0.5)',
+                                        backgroundColor: '#000'
                                     }}>
-                                        <img src={selectedPost.main_image} alt={selectedPost.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
+                                        <img src={selectedPost.main_image} alt={selectedPost.title} style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: 0.9, transform: 'scale(0.9)' }} />
                                     </Box>
 
                                     {/* Content */}
@@ -333,23 +334,152 @@ const Blog: React.FC = () => {
                                         lineHeight: 1.7,
                                         color: 'rgba(255,255,255,0.85)',
                                         textAlign: 'justify',
-                                        mb: 10
+                                        mb: 6
                                     }}>
                                         <Typography variant="body1" sx={{ whiteSpace: 'pre-line', fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 'inherit' }}>
                                             {lang === 'EN' ? selectedPost.content_en : selectedPost.content}
                                         </Typography>
                                     </Box>
 
+                                    {/* True Crime Style Gallery */}
+                                    {selectedPost.gallery_images && selectedPost.gallery_images.length > 0 && (
+                                        <Box
+                                            sx={{
+                                                position: 'relative',
+                                                minHeight: { xs: '400px', md: '500px' },
+                                                mb: 10,
+                                                mt: 2,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                overflow: 'hidden',
+                                                background:
+                                                    'radial-gradient(circle, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0) 70%)',
+                                                borderRadius: 4,
+                                            }}
+                                        >
+                                            {/* Background dashed frame */}
+                                            <Box
+                                                sx={{
+                                                    position: 'absolute',
+                                                    top: '50%',
+                                                    left: '50%',
+                                                    transform: 'translate(-50%, -50%)',
+                                                    width: '80%',
+                                                    height: '70%',
+                                                    border: '1px dashed rgba(255, 215, 0, 0.2)',
+                                                    borderRadius: 2,
+                                                    pointerEvents: 'none',
+                                                }}
+                                            />
+
+                                            {selectedPost.gallery_images.slice(0, 5).map((imageUrl, index) => {
+                                                /** POSICIONES FIJAS Y ORDENADAS */
+                                                const POSITIONS = [
+                                                    { x: -260, rotate: -10 },
+                                                    { x: -130, rotate: -5 },
+                                                    { x: 0, rotate: 0 },
+                                                    { x: 130, rotate: 5 },
+                                                    { x: 260, rotate: 10 },
+                                                ];
+
+                                                const { x, rotate } = POSITIONS[index];
+
+                                                return (
+                                                    <motion.div
+                                                        key={index}
+                                                        initial={{ opacity: 0, scale: 0.9, x: 0, rotate: 0 }}
+                                                        animate={{ opacity: 1, scale: 1, x, rotate }}
+                                                        transition={{
+                                                            delay: index * 0.12,
+                                                            duration: 0.45,
+                                                            ease: 'easeOut',
+                                                        }}
+                                                        whileHover={{
+                                                            scale: 1.12,
+                                                            rotate: 0,
+                                                            zIndex: 100,
+                                                        }}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: '50%',
+                                                            left: '50%',
+                                                            translateX: '-50%',
+                                                            translateY: '-50%',
+                                                            zIndex: 10 + index,
+                                                            cursor: 'pointer',
+                                                        }}
+                                                    >
+                                                        <Box
+                                                            sx={{
+                                                                width: { xs: '150px', md: '220px' },
+                                                                height: { xs: '210px', md: '280px' },
+                                                                bgcolor: '#fff',
+                                                                padding: '10px 10px 30px 10px',
+                                                                boxShadow:
+                                                                    '0 10px 30px rgba(0,0,0,0.8), 0 2px 10px rgba(0,0,0,0.6)',
+                                                                position: 'relative',
+                                                                '&::before': {
+                                                                    content: '""',
+                                                                    position: 'absolute',
+                                                                    top: '-10px',
+                                                                    left: '50%',
+                                                                    transform: 'translateX(-50%) rotate(-2deg)',
+                                                                    width: '50px',
+                                                                    height: '18px',
+                                                                    bgcolor: 'rgba(255, 215, 0, 0.25)',
+                                                                    backdropFilter: 'blur(2px)',
+                                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                                                    opacity: 0.8,
+                                                                },
+                                                            }}
+                                                        >
+                                                            <Box
+                                                                sx={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    backgroundImage: `url(${imageUrl})`,
+                                                                    backgroundSize: 'cover',
+                                                                    backgroundPosition: 'center',
+                                                                    filter: 'sepia(0.2) contrast(1.1) brightness(0.9)',
+                                                                    border: '1px solid rgba(0,0,0,0.1)',
+                                                                }}
+                                                            />
+
+                                                            <Typography
+                                                                sx={{
+                                                                    position: 'absolute',
+                                                                    bottom: '8px',
+                                                                    left: 0,
+                                                                    width: '100%',
+                                                                    textAlign: 'center',
+                                                                    fontFamily: "'Courier New', monospace",
+                                                                    fontSize: '0.65rem',
+                                                                    color: '#222',
+                                                                    fontWeight: 700,
+                                                                    letterSpacing: '1px',
+                                                                    opacity: 0.8,
+                                                                }}
+                                                            >
+                                                                FIG. {index + 1}
+                                                            </Typography>
+                                                        </Box>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                        </Box>
+                                    )}
+
+
+
                                     {/* Comments Section */}
                                     <Box sx={{ mt: 10, mb: 4 }}>
                                         <Typography variant="h5" sx={{
                                             fontFamily: 'Cinzel, serif',
                                             color: '#ffd700',
-                                            mb: 4,
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: 2,
-                                            letterSpacing: 2
+                                            gap: 2
                                         }}>
                                             <MessageSquare size={24} /> {t.comments}
                                         </Typography>
@@ -359,7 +489,7 @@ const Blog: React.FC = () => {
                                             bgcolor: 'rgba(255,255,255,0.03)',
                                             p: 3,
                                             borderRadius: 2,
-                                            mb: 6,
+                                            mt: 3,
                                             border: '1px solid rgba(255,255,255,0.05)'
                                         }}>
                                             <Grid container spacing={2}>
@@ -373,27 +503,28 @@ const Blog: React.FC = () => {
                                                         InputProps={{
                                                             startAdornment: <User size={18} style={{ marginRight: 8, opacity: 0.5 }} />,
                                                             disableUnderline: true,
-                                                            sx: { color: 'white', fontFamily: 'Crimson Text', fontSize: '1.1rem' }
+                                                            style: { color: 'white', fontFamily: 'Crimson Text', fontSize: '1.1rem' }
                                                         }}
                                                         sx={{ borderBottom: '1px solid rgba(0, 255, 170, 0.3)', pb: 1 }}
                                                     />
                                                 </Grid>
+
                                                 <Grid item xs={12}>
                                                     <TextField
                                                         fullWidth
                                                         multiline
-                                                        rows={2}
                                                         placeholder={t.contentLabel}
                                                         value={newCommentContent}
                                                         onChange={(e) => setNewCommentContent(e.target.value)}
                                                         variant="standard"
                                                         InputProps={{
                                                             disableUnderline: true,
-                                                            sx: { color: 'white', fontFamily: 'Crimson Text', fontSize: '1.1rem' }
+                                                            style: { color: 'white', fontFamily: 'Crimson Text', fontSize: '1.1rem' }
                                                         }}
                                                         sx={{ borderBottom: '1px solid rgba(0, 255, 170, 0.3)', pb: 1, mt: 2 }}
                                                     />
                                                 </Grid>
+
                                                 <Grid item xs={12} sx={{ textAlign: 'right', mt: 2 }}>
                                                     <Button
                                                         variant="text"
@@ -413,7 +544,7 @@ const Blog: React.FC = () => {
                                         </Box>
 
                                         {/* Comments List */}
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 4 }}>
                                             {comments.length === 0 ? (
                                                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', textAlign: 'center' }}>
                                                     {t.noComments}
@@ -471,7 +602,8 @@ const Blog: React.FC = () => {
                                     </Box>
                                 </motion.div>
                             ) : (
-                                <Box sx={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
+                                // Estado cuando NO hay post seleccionado (pantalla derecha vacía)
+                                <Box sx={{ height: '100%', minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
                                     <Hexagon size={80} color="#ffd700" />
                                     <Typography variant="body2" sx={{ mt: 2, fontFamily: 'Cinzel', letterSpacing: 3 }}>
                                         {t.select}

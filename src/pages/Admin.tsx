@@ -41,6 +41,7 @@ const Admin: React.FC = () => {
     const [openDialog, setOpenDialog] = useState(false);
     const [editingPost, setEditingPost] = useState<Partial<BlogPost> | null>(null);
     const [newTag, setNewTag] = useState('');
+    const [uploadingImages, setUploadingImages] = useState(false);
 
     // Comments State
     const [openCommentsDialog, setOpenCommentsDialog] = useState(false);
@@ -156,6 +157,7 @@ const Admin: React.FC = () => {
             content: '',
             content_en: '',
             main_image: '',
+            gallery_images: [],
             tags: []
         });
         setOpenDialog(true);
@@ -172,6 +174,57 @@ const Admin: React.FC = () => {
             setEditingPost({ ...editingPost, tags: [...(editingPost.tags || []), newTag] });
             setNewTag('');
         }
+    };
+
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        setUploadingImages(true);
+        const uploadedUrls: string[] = [];
+
+        try {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+                const filePath = `blog-gallery/${fileName}`;
+
+                const { data, error } = await supabase.storage
+                    .from('blog-images')
+                    .upload(filePath, file);
+
+                if (error) {
+                    console.error('Upload error:', error);
+                    alert(`Error uploading ${file.name}: ${error.message}`);
+                } else {
+                    // Get public URL
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('blog-images')
+                        .getPublicUrl(filePath);
+
+                    uploadedUrls.push(publicUrl);
+                }
+            }
+
+            // Add uploaded URLs to gallery_images
+            setEditingPost({
+                ...editingPost,
+                gallery_images: [...(editingPost?.gallery_images || []), ...uploadedUrls]
+            });
+
+        } catch (err) {
+            console.error('Fatal upload error:', err);
+            alert('Error uploading images');
+        } finally {
+            setUploadingImages(false);
+        }
+    };
+
+    const removeGalleryImage = (index: number) => {
+        const newGallery = [...(editingPost?.gallery_images || [])];
+        newGallery.splice(index, 1);
+        setEditingPost({ ...editingPost, gallery_images: newGallery });
     };
 
     if (!isLoggedIn) {
@@ -354,6 +407,76 @@ const Admin: React.FC = () => {
                                 value={editingPost?.content_en || ''}
                                 onChange={(e) => setEditingPost({ ...editingPost, content_en: e.target.value })}
                             />
+                        </Grid>
+
+                        {/* GALLERY IMAGES SECTION */}
+                        <Grid item xs={12}><Divider sx={{ borderStyle: 'dashed', opacity: 0.2 }} /></Grid>
+
+                        <Grid item xs={12}>
+                            <Typography variant="overline" sx={{ color: '#00ffaa', display: 'block', mb: 2 }}>
+                                📸 Galería True Crime (Imágenes Superpuestas)
+                            </Typography>
+
+                            <Box sx={{ mb: 3 }}>
+                                <input
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    id="gallery-upload"
+                                    multiple
+                                    type="file"
+                                    onChange={handleImageUpload}
+                                />
+                                <label htmlFor="gallery-upload">
+                                    <Button
+                                        variant="outlined"
+                                        component="span"
+                                        disabled={uploadingImages}
+                                        startIcon={<ImageIcon />}
+                                        sx={{ borderColor: '#00ffaa', color: '#00ffaa' }}
+                                    >
+                                        {uploadingImages ? 'Subiendo...' : 'Subir Imágenes de Galería'}
+                                    </Button>
+                                </label>
+                            </Box>
+
+                            {/* Gallery Preview */}
+                            {editingPost?.gallery_images && editingPost.gallery_images.length > 0 && (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                                    {editingPost.gallery_images.map((url, index) => (
+                                        <Box
+                                            key={index}
+                                            sx={{
+                                                position: 'relative',
+                                                width: 120,
+                                                height: 120,
+                                                borderRadius: 1,
+                                                overflow: 'hidden',
+                                                border: '2px solid rgba(0, 255, 170, 0.3)'
+                                            }}
+                                        >
+                                            <img
+                                                src={url}
+                                                alt={`Gallery ${index + 1}`}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => removeGalleryImage(index)}
+                                                sx={{
+                                                    position: 'absolute',
+                                                    top: 4,
+                                                    right: 4,
+                                                    bgcolor: 'rgba(0,0,0,0.7)',
+                                                    color: '#ff4d00',
+                                                    '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' }
+                                                }}
+                                            >
+                                                <X size={16} />
+                                            </IconButton>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            )}
                         </Grid>
                     </Grid>
                 </DialogContent>

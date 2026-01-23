@@ -18,6 +18,7 @@ export type BlogPost = {
     content: string;
     content_en: string;
     main_image: string;
+    gallery_images?: string[]; // URLs de imágenes para la galería estilo true crime
     tags: string[];
     author: string;
     created_at: string;
