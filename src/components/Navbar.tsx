@@ -31,8 +31,8 @@ const Navbar: React.FC = () => {
     };
 
     const t = {
-        ES: { projects: 'Proyectos', contact: 'Contacto', blog: 'El Archivo', cv: 'Descargar CV', home: 'Inicio' },
-        EN: { projects: 'Projects', contact: 'Contact', blog: 'The Archive', cv: 'Download CV', home: 'Home' }
+        ES: { projects: 'Proyectos', contact: 'Contacto', cv: 'Descargar CV', home: 'Inicio' },
+        EN: { projects: 'Projects', contact: 'Contact', cv: 'Download CV', home: 'Home' }
     }[lang];
 
     const menuItems = [
@@ -83,18 +83,6 @@ const Navbar: React.FC = () => {
                                 {item.name}
                             </Button>
                         ))}
-                        <Button
-                            component={Link}
-                            to="/blog"
-                            sx={{
-                                color: '#ffd700',
-                                opacity: 0.8,
-                                fontWeight: 600,
-                                '&:hover': { opacity: 1, background: 'transparent', color: '#ffd700', textShadow: '0 0 10px rgba(255, 215, 0, 0.5)' }
-                            }}
-                        >
-                            {t.blog}
-                        </Button>
 
                         <IconButton
                             onClick={() => setLang(lang === 'ES' ? 'EN' : 'ES')}
@@ -176,11 +164,6 @@ const Navbar: React.FC = () => {
                             </ListItemButton>
                         </ListItem>
                     ))}
-                    <ListItem disablePadding>
-                        <ListItemButton component={Link} to="/blog" onClick={() => setMobileOpen(false)} sx={{ py: 2 }}>
-                            <ListItemText primary={t.blog} primaryTypographyProps={{ color: '#ffd700', fontWeight: 800, letterSpacing: 1 }} />
-                        </ListItemButton>
-                    </ListItem>
                 </List>
                 <Divider sx={{ my: 4, borderColor: 'rgba(255,255,255,0.1)' }} />
                 <Button

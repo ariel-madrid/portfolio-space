@@ -9,8 +9,8 @@ const Hero: React.FC = () => {
                 minHeight: '100vh',
                 display: 'flex',
                 alignItems: 'center',
-                pt: 12,
-                pb: 8,
+                pt: 4,
+                pb: 2,
                 position: 'relative',
                 overflow: 'hidden'
             }}

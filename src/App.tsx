@@ -4,8 +4,6 @@ import { Box } from '@mui/material';
 import Navbar from './components/Navbar';
 import Background from './components/Background';
 import Home from './pages/Home';
-import Blog from './pages/Blog';
-import Admin from './pages/Admin';
 
 function App() {
     return (
@@ -16,8 +14,6 @@ function App() {
 
                 <Routes>
                     <Route path="/" element={<Home />} />
-                    <Route path="/blog" element={<Blog />} />
-                    <Route path="/admin" element={<Admin />} />
                 </Routes>
             </Box>
         </BrowserRouter>

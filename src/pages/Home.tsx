@@ -101,7 +101,7 @@ const Home: React.FC = () => {
                     bgcolor: 'rgba(0, 212, 255, 0.03)',
                     borderBottom: '1px solid rgba(0, 212, 255, 0.1)',
                     py: 1.5,
-                    mt: '80px', // Below navbar
+                    mt: '60px', // Below navbar
                     textAlign: 'center',
                     backdropFilter: 'blur(5px)',
                     position: 'relative',
@@ -138,7 +138,7 @@ const Home: React.FC = () => {
 
             <Hero />
 
-            <Container maxWidth="lg" sx={{ py: 15 }} id="projects">
+            <Container maxWidth="lg" sx={{ py: 4 }} id="projects">
                 <motion.div
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
